@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addProductAction } from '@/app/actions/ProductAction';
+import { createProduct } from '@/app/actions/ProductAction';
 import Link from 'next/link';
 
 export default function TambahProdukPage() {
@@ -23,7 +23,7 @@ export default function TambahProdukPage() {
         setMessage(null);
 
         const formData = new FormData(e.currentTarget);
-        const result = await addProductAction(formData);
+        const result = await createProduct(formData);
 
         setLoading(false);
 
