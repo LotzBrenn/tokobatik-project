@@ -6,7 +6,10 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function AdminDashboardPage({ searchParams }) {
-  const period = searchParams?.period || 'all';
+  // Await searchParams karena di Next.js 15+ ini adalah Promise
+  const params = await searchParams;
+  const period = params?.period || 'all';
+
   let orders = [];
   let summary = {
     totalRevenue: 0,

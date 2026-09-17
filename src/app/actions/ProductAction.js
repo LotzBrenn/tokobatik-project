@@ -32,6 +32,15 @@ export async function createProduct(formData) {
     const price = parseInt(formData.get('price'), 10);
     const description = formData.get('description')?.trim() || '';
 
+    // Detail produk
+    const details = {
+        size_guide: formData.get('size_guide')?.trim() || '',
+        fabric_type: formData.get('fabric_type')?.trim() || '',
+        dye_type: formData.get('dye_type')?.trim() || '',
+        technique_and_tools: formData.get('technique_and_tools')?.trim() || '',
+        warning: formData.get('warning')?.trim() || ''
+    };
+
     const imageFile = formData.get('image');
     let imagePath = '/uploads/default.jpg';
 
@@ -46,9 +55,9 @@ export async function createProduct(formData) {
         }
 
         await db.query(
-            `INSERT INTO products (id, name, category_id, price, image, description)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [id, name, category, price, imagePath, description]
+            `INSERT INTO products (id, name, category_id, price, image, description, details)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [id, name, category, price, imagePath, description, JSON.stringify(details)]
         );
 
         revalidatePath('/admin/produk');
@@ -69,6 +78,15 @@ export async function updateProduct(formData) {
     const price = parseInt(formData.get('price'), 10);
     const description = formData.get('description')?.trim() || '';
 
+    // Detail produk
+    const details = {
+        size_guide: formData.get('size_guide')?.trim() || '',
+        fabric_type: formData.get('fabric_type')?.trim() || '',
+        dye_type: formData.get('dye_type')?.trim() || '',
+        technique_and_tools: formData.get('technique_and_tools')?.trim() || '',
+        warning: formData.get('warning')?.trim() || ''
+    };
+
     const imageFile = formData.get('image');
 
     try {
@@ -80,18 +98,18 @@ export async function updateProduct(formData) {
         if (imagePath) {
             // Jika memilih gambar baru, update lokasi gambar
             await db.query(
-                `UPDATE products 
-                 SET name = ?, category_id = ?, price = ?, image = ?, description = ?
+                `UPDATE products
+                 SET name = ?, category_id = ?, price = ?, image = ?, description = ?, details = ?
                  WHERE id = ?`,
-                [name, category, price, imagePath, description, id]
+                [name, category, price, imagePath, description, JSON.stringify(details), id]
             );
         } else {
             // Jika tidak mengunggah gambar baru, pertahankan gambar lama
             await db.query(
-                `UPDATE products 
-                 SET name = ?, category_id = ?, price = ?, description = ?
+                `UPDATE products
+                 SET name = ?, category_id = ?, price = ?, description = ?, details = ?
                  WHERE id = ?`,
-                [name, category, price, description, id]
+                [name, category, price, description, JSON.stringify(details), id]
             );
         }
 

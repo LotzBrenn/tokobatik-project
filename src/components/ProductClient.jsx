@@ -7,6 +7,7 @@ export default function ProdukClient({ initialProducts, categoriesList }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editProduct, setEditProduct] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
+    const [detailProduct, setDetailProduct] = useState(null);
 
     // Buka modal untuk tambah
     const handleOpenAddModal = () => {
@@ -27,6 +28,16 @@ export default function ProdukClient({ initialProducts, categoriesList }) {
         setIsModalOpen(false);
         setEditProduct(null);
         setPreviewImage(null);
+    };
+
+    // Buka detail produk
+    const handleOpenDetail = (product) => {
+        setDetailProduct(product);
+    };
+
+    // Tutup detail produk
+    const handleCloseDetail = () => {
+        setDetailProduct(null);
     };
 
     // Handle preview saat pilih file
@@ -97,6 +108,12 @@ export default function ProdukClient({ initialProducts, categoriesList }) {
                                             Rp {Number(prod.price).toLocaleString('id-ID')}
                                         </td>
                                         <td className="p-4 text-right space-x-2">
+                                            <button
+                                                onClick={() => handleOpenDetail(prod)}
+                                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg font-bold hover:bg-blue-500/30 transition"
+                                            >
+                                                Lihat Detail
+                                            </button>
                                             <button
                                                 onClick={() => handleOpenEditModal(prod)}
                                                 className="px-3 py-1 bg-amber-500/20 text-[#D9A441] rounded-lg font-bold hover:bg-amber-500/30 transition"
@@ -246,6 +263,66 @@ export default function ProdukClient({ initialProducts, categoriesList }) {
                                 ></textarea>
                             </div>
 
+                            {/* Detail Produk Section */}
+                            <div className="border-t border-white/10 pt-4 space-y-4">
+                                <h4 className="text-sm font-bold text-[#D9A441]">Detail Produk Batik</h4>
+
+                                <div>
+                                    <label className="block text-slate-300 font-bold mb-1">Panduan Ukuran</label>
+                                    <input
+                                        type="text"
+                                        name="size_guide"
+                                        defaultValue={editProduct?.details ? (typeof editProduct.details === 'string' ? JSON.parse(editProduct.details).size_guide : editProduct.details.size_guide) : ''}
+                                        placeholder="Contoh: S, M, L, XL, XXL"
+                                        className="w-full bg-[#141414] text-white p-3 rounded-xl border border-white/10 focus:outline-none focus:border-[#D9A441]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-300 font-bold mb-1">Jenis Bahan Kain</label>
+                                    <input
+                                        type="text"
+                                        name="fabric_type"
+                                        defaultValue={editProduct?.details ? (typeof editProduct.details === 'string' ? JSON.parse(editProduct.details).fabric_type : editProduct.details.fabric_type) : ''}
+                                        placeholder="Contoh: Katun Prima, Sutra, Rayon"
+                                        className="w-full bg-[#141414] text-white p-3 rounded-xl border border-white/10 focus:outline-none focus:border-[#D9A441]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-300 font-bold mb-1">Jenis Pewarna</label>
+                                    <input
+                                        type="text"
+                                        name="dye_type"
+                                        defaultValue={editProduct?.details ? (typeof editProduct.details === 'string' ? JSON.parse(editProduct.details).dye_type : editProduct.details.dye_type) : ''}
+                                        placeholder="Contoh: Pewarna Alami, Pewarna Sintetis"
+                                        className="w-full bg-[#141414] text-white p-3 rounded-xl border border-white/10 focus:outline-none focus:border-[#D9A441]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-300 font-bold mb-1">Teknik & Alat Pembuatan</label>
+                                    <textarea
+                                        name="technique_and_tools"
+                                        rows="2"
+                                        defaultValue={editProduct?.details ? (typeof editProduct.details === 'string' ? JSON.parse(editProduct.details).technique_and_tools : editProduct.details.technique_and_tools) : ''}
+                                        placeholder="Contoh: Teknik cap menggunakan canting dan malam"
+                                        className="w-full bg-[#141414] text-white p-3 rounded-xl border border-white/10 focus:outline-none focus:border-[#D9A441]"
+                                    ></textarea>
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-300 font-bold mb-1">Peringatan Perawatan</label>
+                                    <textarea
+                                        name="warning"
+                                        rows="2"
+                                        defaultValue={editProduct?.details ? (typeof editProduct.details === 'string' ? JSON.parse(editProduct.details).warning : editProduct.details.warning) : ''}
+                                        placeholder="Contoh: Cuci dengan tangan, jangan gunakan pemutih"
+                                        className="w-full bg-[#141414] text-white p-3 rounded-xl border border-white/10 focus:outline-none focus:border-[#D9A441]"
+                                    ></textarea>
+                                </div>
+                            </div>
+
                             {/* Tombol Aksi */}
                             <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
                                 <button
@@ -263,6 +340,120 @@ export default function ProdukClient({ initialProducts, categoriesList }) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DETAIL PRODUK */}
+            {detailProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#2A2A2A] border border-white/10 w-full max-w-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+
+                        {/* Header Detail */}
+                        <div className="flex justify-between items-start border-b border-white/10 pb-4">
+                            <div className="flex-1">
+                                <h3 className="text-xl font-bold text-[#D9A441] uppercase">{detailProduct.name}</h3>
+                                <p className="text-slate-400 text-xs mt-1 font-mono">{detailProduct.id}</p>
+                            </div>
+                            <button
+                                onClick={handleCloseDetail}
+                                className="w-8 h-8 rounded-full bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 font-bold flex items-center justify-center transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Gambar Produk */}
+                        <div className="relative w-full h-64 rounded-2xl overflow-hidden border border-white/10 bg-black">
+                            <Image
+                                src={detailProduct.image || '/uploads/default.jpg'}
+                                alt={detailProduct.name}
+                                fill
+                                className="object-contain"
+                                unoptimized
+                            />
+                        </div>
+
+                        {/* Info Dasar */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-[#141414] p-4 rounded-xl border border-white/10">
+                                <p className="text-slate-400 text-xs mb-1">Kategori</p>
+                                <p className="text-[#D9A441] font-bold">{detailProduct.category_name || detailProduct.category}</p>
+                            </div>
+                            <div className="bg-[#141414] p-4 rounded-xl border border-white/10">
+                                <p className="text-slate-400 text-xs mb-1">Harga</p>
+                                <p className="text-emerald-400 font-bold font-mono">Rp {Number(detailProduct.price).toLocaleString('id-ID')}</p>
+                            </div>
+                        </div>
+
+                        {/* Deskripsi */}
+                        {detailProduct.description && (
+                            <div className="bg-[#141414] p-4 rounded-xl border border-white/10">
+                                <p className="text-slate-400 text-xs font-bold mb-2">Deskripsi</p>
+                                <p className="text-slate-300 text-sm leading-relaxed">{detailProduct.description}</p>
+                            </div>
+                        )}
+
+                        {/* Detail Produk Batik */}
+                        {detailProduct.details && (() => {
+                            const details = typeof detailProduct.details === 'string'
+                                ? JSON.parse(detailProduct.details)
+                                : detailProduct.details;
+
+                            const hasAnyDetail = details?.size_guide || details?.fabric_type || details?.dye_type || details?.technique_and_tools || details?.warning;
+
+                            return hasAnyDetail ? (
+                                <div className="bg-[#141414] p-4 rounded-xl border border-white/10 space-y-4">
+                                    <h4 className="text-sm font-bold text-[#D9A441] mb-3">Detail Produk Batik</h4>
+
+                                    {details?.size_guide && (
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold mb-1">Panduan Ukuran</p>
+                                            <p className="text-slate-300 text-sm">{details.size_guide}</p>
+                                        </div>
+                                    )}
+
+                                    {details?.fabric_type && (
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold mb-1">Bahan Kain</p>
+                                            <p className="text-slate-300 text-sm">{details.fabric_type}</p>
+                                        </div>
+                                    )}
+
+                                    {details?.dye_type && (
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold mb-1">Pewarna</p>
+                                            <p className="text-slate-300 text-sm">{details.dye_type}</p>
+                                        </div>
+                                    )}
+
+                                    {details?.technique_and_tools && (
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold mb-1">Teknik & Alat</p>
+                                            <p className="text-slate-300 text-sm">{details.technique_and_tools}</p>
+                                        </div>
+                                    )}
+
+                                    {details?.warning && (
+                                        <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
+                                            <p className="text-amber-400 text-xs font-bold mb-1">⚠️ Peringatan Perawatan</p>
+                                            <p className="text-amber-300 text-sm">{details.warning}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null;
+                        })()}
+
+                        {/* Tombol Tutup */}
+                        <div className="flex justify-end pt-4 border-t border-white/10">
+                            <button
+                                onClick={handleCloseDetail}
+                                className="px-6 py-2.5 bg-[#D9A441] text-[#141414] font-bold rounded-xl hover:bg-amber-400 transition"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             )}
