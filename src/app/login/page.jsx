@@ -18,9 +18,8 @@ export default function LoginPage() {
         const result = await loginAction(formData);
 
         if (result.success) {
-            // Simpan session admin di LocalStorage / Cookies
-            localStorage.setItem('admin_user', JSON.stringify(result.user));
-            router.push('/admin'); // Navigasi ke Dashboard Admin
+            // Session sekarang disimpan di secure HTTP-only cookie oleh server
+            router.push('/admin');
         } else {
             setError(result.message);
             setLoading(false);

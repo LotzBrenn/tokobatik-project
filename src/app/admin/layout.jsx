@@ -1,7 +1,11 @@
 // src/app/admin/layout.jsx
 import Link from 'next/link';
+import { verifySession } from '@/library/session';
+import LogoutButton from './components/LogoutButton';
 
-export default function AdminLayout({ children }) {
+export default async function AdminLayout({ children }) {
+    const session = await verifySession();
+
     return (
         <div className="flex min-h-screen bg-[#141414] text-white font-sans">
 
@@ -16,6 +20,21 @@ export default function AdminLayout({ children }) {
                             Griya Batik Admin
                         </h2>
                     </div>
+
+                    {/* User Info */}
+                    {session.isAuth && (
+                        <div className="bg-[#141414] p-4 rounded-xl border border-white/5">
+                            <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">
+                                Logged in as
+                            </p>
+                            <p className="text-sm font-bold text-white truncate">
+                                {session.user.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                                {session.user.email}
+                            </p>
+                        </div>
+                    )}
 
                     <nav className="space-y-2 text-xs font-bold">
                         <Link
@@ -39,13 +58,14 @@ export default function AdminLayout({ children }) {
                     </nav>
                 </div>
 
-                <div className="pt-6 border-t border-white/10">
+                <div className="pt-6 border-t border-white/10 space-y-3">
                     <Link
                         href="/"
                         className="flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition"
                     >
                         ← Lihat Toko Utama
                     </Link>
+                    <LogoutButton />
                 </div>
             </aside>
 

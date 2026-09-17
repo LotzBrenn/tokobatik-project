@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@/library/db';
+import { createSession, deleteSession } from '@/library/session';
 
 export async function loginAction(formData) {
     const email = formData.get('email');
@@ -23,18 +24,30 @@ export async function loginAction(formData) {
 
         const user = rows[0];
 
+        // Hanya izinkan user dengan role 'admin'
+        if (user.role !== 'admin') {
+            return { success: false, message: 'Akses ditolak. Hanya admin yang dapat login.' };
+        }
+
+        // Buat session cookie yang aman
+        await createSession(user.id, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        });
+
         return {
             success: true,
             message: 'Login berhasil!',
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
         };
     } catch (error) {
         console.error('Error saat login:', error);
         return { success: false, message: 'Terjadi kesalahan sistem.' };
     }
+}
+
+export async function logoutAction() {
+    await deleteSession();
+    return { success: true };
 }
