@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifySession } from '@/library/session';
 
-export async function middleware(request) {
+export async function proxy(request) {
   const path = request.nextUrl.pathname;
 
   // Proteksi semua route /admin
