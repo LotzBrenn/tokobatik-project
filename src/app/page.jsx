@@ -5,12 +5,22 @@ import Navbar from '@/components/Navbar';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#141414] text-white flex flex-col justify-between selection:bg-[#D9A441] selection:text-[#141414]">
-      {/* Navbar Component */}
-      <Navbar />
+    <div className="min-h-screen bg-[#141414] text-white flex flex-col justify-between selection:bg-[#D9A441] selection:text-[#141414] relative">
+      {/* Background Image with Overlay */}
+      <div className="fixed inset-0 z-0 opacity-10">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-fixed"
+          style={{ backgroundImage: 'url(/batik-bg.png)' }}
+        />
+      </div>
 
-      {/* Main Hero Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-8 md:px-16 flex items-center py-12">
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Navbar Component */}
+        <Navbar />
+
+        {/* Main Hero Content */}
+        <main className="flex-1 max-w-7xl mx-auto w-full px-8 md:px-16 flex items-center py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
 
           {/* Kolom Kiri: Teks & Tombol */}
@@ -27,12 +37,18 @@ export default function LandingPage() {
               Selamat datang di Griya Batik. Kami menyediakan koleksi kain batik tulis, cap, dan kombinasi dengan motif otentik karya pengrajin lokal. Temukan keindahan warisan budaya dengan sentuhan desain elegan.
             </p>
 
-            <div className="pt-4">
+            <div className="pt-4 flex flex-wrap gap-4">
               <Link
                 href="/usaha"
                 className="inline-block px-8 py-3.5 bg-[#D9A441] hover:bg-[#b88933] text-[#141414] font-bold rounded-2xl transition duration-200 shadow-lg shadow-[#D9A441]/10 text-sm md:text-base"
               >
                 menuju ke katalog
+              </Link>
+              <Link
+                href="/track"
+                className="inline-block px-8 py-3.5 bg-transparent hover:bg-white/5 text-[#D9A441] font-bold rounded-2xl transition duration-200 border-2 border-[#D9A441] text-sm md:text-base"
+              >
+                Cek Status Pesanan
               </Link>
             </div>
           </div>
@@ -62,6 +78,7 @@ export default function LandingPage() {
       <footer className="py-6 text-center text-xs text-zinc-500 border-t border-white/5">
         © 2026 Griya Batik — Latihan Sertifikasi Junior Web Developer
       </footer>
+      </div>
     </div>
   );
 }

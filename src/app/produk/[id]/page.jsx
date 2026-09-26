@@ -38,9 +38,9 @@ async function handleCreateOrder(formData) {
 export default async function DetailProdukPage({ params }) {
   const { id } = await params;
 
-  // Query produk lengkap dengan nama kategori
+  // Query produk lengkap dengan nama kategori dan varian
   const [rows] = await db.query(
-    `SELECT p.*, c.name AS category_name 
+    `SELECT p.*, c.name AS category_name
      FROM products p
      JOIN categories c ON p.category_id = c.id
      WHERE p.id = ?`,
@@ -53,9 +53,28 @@ export default async function DetailProdukPage({ params }) {
 
   const product = rows[0];
 
+  // Query varian produk (size, price, stock)
+  const [variantRows] = await db.query(
+    `SELECT id, size, price, stock
+     FROM product_variants
+     WHERE product_id = ?
+     ORDER BY price ASC`,
+    [id]
+  );
+
+  const variants = variantRows || [];
+
   return (
-    <div className="bg-[#141414] text-white min-h-screen py-12 px-6 md:px-12 lg:px-16 font-sans">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="bg-[#141414] text-white min-h-screen py-12 px-6 md:px-12 lg:px-16 font-sans relative">
+      {/* Background Image with Overlay */}
+      <div className="fixed inset-0 z-0 opacity-10">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-fixed"
+          style={{ backgroundImage: 'url(/batik-bg.png)' }}
+        />
+      </div>
+
+      <div className="max-w-5xl mx-auto space-y-8 relative z-10">
 
         {/* Navigasi Kembali */}
         <div>
@@ -90,11 +109,27 @@ export default async function DetailProdukPage({ params }) {
               <p className="text-slate-300 text-sm leading-relaxed">
                 {product.description}
               </p>
-              <div className="pt-2 flex items-center justify-between border-t border-white/10">
-                <span className="text-xs text-slate-400 font-mono">HARGA KAIN / POTONG</span>
-                <span className="text-2xl font-black text-[#D9A441]">
-                  Rp {Number(product.price).toLocaleString('id-ID')}
-                </span>
+              <div className="pt-2 border-t border-white/10">
+                <span className="text-xs text-slate-400 font-mono block mb-2">HARGA BERDASARKAN UKURAN</span>
+                {variants.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {variants.map((variant) => (
+                      <div key={variant.id} className="flex items-center justify-between text-sm">
+                        <span className="text-white">
+                          <span className="font-bold">{variant.size}</span>
+                          <span className="text-slate-400 text-xs ml-2">
+                            (Stok: {variant.stock})
+                          </span>
+                        </span>
+                        <span className="font-bold text-[#D9A441]">
+                          Rp {Number(variant.price).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-sm">Tidak ada varian tersedia</p>
+                )}
               </div>
             </div>
           </div>

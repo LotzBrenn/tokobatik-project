@@ -38,14 +38,7 @@ export default function CartDrawer() {
     const formElement = e.currentTarget;
     const formData = new FormData(formElement);
 
-    const productSummary = cart
-      .map((item) => `${item.name} (${item.size}) x${item.qty}`)
-      .join(', ');
-
-    const sizeSummary = cart.map((i) => i.size).join(', ');
-
-    formData.append('productName', productSummary);
-    formData.append('size', sizeSummary);
+    formData.append('cartItems', JSON.stringify(cart));
     formData.append('totalPrice', totalPrice.toString());
 
     try {
@@ -117,8 +110,8 @@ export default function CartDrawer() {
             <div className="text-left text-xs bg-[#141414] p-4 rounded-xl space-y-1.5 border border-white/5">
               <p><span className="text-zinc-400">Pemesan:</span> {successData.customerName}</p>
               <p><span className="text-zinc-400">No HP:</span> {successData.customerPhone}</p>
-              <p><span className="text-zinc-400">Item:</span> {successData.productName}</p>
-              <p><span className="text-zinc-400">Total:</span> <b className="text-emerald-400">Rp {Number(successData.totalPrice).toLocaleString('id-ID')}</b></p>
+              <p><span className="text-zinc-400">Jumlah Item:</span> {successData.itemCount} item</p>
+              <p><span className="text-zinc-400">Total:</span> <b className="text-emerald-400">Rp {Number(successData.totalAmount).toLocaleString('id-ID')}</b></p>
             </div>
             <button
               type="button"

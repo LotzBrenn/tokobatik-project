@@ -9,6 +9,8 @@ export default function KatalogClient({ initialProducts, categoriesList }) {
     const [selectedCategory, setSelectedCategory] = useState('Semua');
     const [sortBy, setSortBy] = useState('terbaru');
     const [detailProduct, setDetailProduct] = useState(null);
+    const [productVariants, setProductVariants] = useState([]);
+    const [selectedVariant, setSelectedVariant] = useState(null);
     const { addToCart } = useCart();
 
     // Filter & Pengurutan Data berdasarkan category_name dari JOIN SQL
@@ -29,11 +31,26 @@ export default function KatalogClient({ initialProducts, categoriesList }) {
     // Buka detail produk
     const handleOpenDetail = (product) => {
         setDetailProduct(product);
+
+        // Parse variants from concatenated string (format: "size:price:stock|size:price:stock")
+        if (product.variants) {
+            const parsedVariants = product.variants.split('|').map(v => {
+                const [size, price, stock] = v.split(':');
+                return { size, price: parseInt(price), stock: parseInt(stock) };
+            });
+            setProductVariants(parsedVariants);
+            setSelectedVariant(parsedVariants[0] || null);
+        } else {
+            setProductVariants([]);
+            setSelectedVariant(null);
+        }
     };
 
     // Tutup detail produk
     const handleCloseDetail = () => {
         setDetailProduct(null);
+        setProductVariants([]);
+        setSelectedVariant(null);
     };
 
     return (
@@ -141,10 +158,10 @@ export default function KatalogClient({ initialProducts, categoriesList }) {
                                     </div>
 
                                     <button
-                                        onClick={() => addToCart(product, 'L')} // Default ukuran L
+                                        onClick={() => handleOpenDetail(product)}
                                         className="w-full px-3 py-2 bg-[#D9A441] text-[#141414] text-xs font-bold rounded-lg hover:bg-amber-400 transition"
                                     >
-                                        + Tambah ke Keranjang
+                                        + Pilih Ukuran
                                     </button>
                                 </div>
                             </div>
@@ -192,9 +209,39 @@ export default function KatalogClient({ initialProducts, categoriesList }) {
                             </div>
                             <div className="bg-[#141414] p-4 rounded-xl border border-white/10">
                                 <p className="text-slate-400 text-xs mb-1">Harga</p>
-                                <p className="text-emerald-400 font-bold font-mono">Rp {Number(detailProduct.price).toLocaleString('id-ID')}</p>
+                                <p className="text-emerald-400 font-bold font-mono">
+                                    Rp {selectedVariant ? Number(selectedVariant.price).toLocaleString('id-ID') : Number(detailProduct.price).toLocaleString('id-ID')}
+                                </p>
                             </div>
                         </div>
+
+                        {/* Variant Selector */}
+                        {productVariants.length > 0 && (
+                            <div className="bg-[#141414] p-4 rounded-xl border border-white/10">
+                                <p className="text-slate-400 text-xs font-bold mb-3">Pilih Ukuran</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {productVariants.map((variant, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedVariant(variant)}
+                                            disabled={variant.stock === 0}
+                                            className={`p-3 rounded-lg border transition ${
+                                                selectedVariant?.size === variant.size
+                                                    ? 'bg-[#D9A441] border-[#D9A441] text-[#141414]'
+                                                    : variant.stock === 0
+                                                    ? 'bg-[#2A2A2A] border-white/5 text-slate-600 cursor-not-allowed'
+                                                    : 'bg-[#2A2A2A] border-white/10 text-white hover:border-[#D9A441]'
+                                            }`}
+                                        >
+                                            <div className="text-sm font-bold">{variant.size}</div>
+                                            <div className="text-xs mt-1">
+                                                {variant.stock === 0 ? 'Habis' : `Stok: ${variant.stock}`}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Deskripsi */}
                         {detailProduct.description && (
@@ -258,10 +305,20 @@ export default function KatalogClient({ initialProducts, categoriesList }) {
                         <div className="flex justify-end pt-4 border-t border-white/10">
                             <button
                                 onClick={() => {
-                                    addToCart(detailProduct, 'L');
-                                    handleCloseDetail();
+                                    if (selectedVariant) {
+                                        addToCart({
+                                            ...detailProduct,
+                                            price: selectedVariant.price
+                                        }, selectedVariant.size);
+                                        handleCloseDetail();
+                                    }
                                 }}
-                                className="px-6 py-2.5 bg-[#D9A441] text-[#141414] font-bold rounded-xl hover:bg-amber-400 transition"
+                                disabled={!selectedVariant || selectedVariant.stock === 0}
+                                className={`px-6 py-2.5 font-bold rounded-xl transition ${
+                                    !selectedVariant || selectedVariant.stock === 0
+                                        ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                                        : 'bg-[#D9A441] text-[#141414] hover:bg-amber-400'
+                                }`}
                             >
                                 + Tambah ke Keranjang
                             </button>

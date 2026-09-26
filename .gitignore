@@ -14,7 +14,7 @@
 /coverage
 AGENTS.md
 CLAUDE.md
-
+.claude
 # next.js
 /.next/
 /out/

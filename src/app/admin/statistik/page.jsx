@@ -1,26 +1,27 @@
-// src/app/admin/page.jsx
+// src/app/admin/statistik/page.jsx
 import { db } from '@/library/db';
-import Link from 'next/link';
 import PeriodFilter from '@/components/PeriodFilter';
 import CategoryFilter from '@/components/CategoryFilter';
-import OrderManagementTable from './OrderManagementTable';
+import StatisticsCharts from './StatisticsCharts';
 
 export const revalidate = 0;
 
-export default async function AdminDashboardPage({ searchParams }) {
+export default async function StatisticsPage({ searchParams }) {
   const params = await searchParams;
   const period = params?.period || 'all';
   const startDate = params?.start || '';
   const endDate = params?.end || '';
   const category = params?.category || 'all';
 
-  let orders = [];
-  let categories = [];
   let summary = {
     totalRevenue: 0,
     totalOrders: 0,
     periodLabel: 'Semua Waktu'
   };
+
+  let topProducts = [];
+  let dailySales = [];
+  let categories = [];
 
   try {
     const [categoryRows] = await db.query('SELECT id, name FROM categories ORDER BY name ASC');
@@ -32,37 +33,17 @@ export default async function AdminDashboardPage({ searchParams }) {
   }
 
   try {
-    let baseQuery = `
-      SELECT
-        o.id,
-        o.order_id,
-        o.customer_name,
-        o.customer_phone,
-        o.note,
-        o.total_amount,
-        o.status,
-        o.payment_proof,
-        o.created_at,
-        GROUP_CONCAT(DISTINCT p.category_id) as category_ids,
-        GROUP_CONCAT(CONCAT(oi.product_name, ' (', oi.size, ') x', oi.quantity) SEPARATOR ', ') as items_summary,
-        COUNT(oi.id) as item_count
-      FROM orders o
-      LEFT JOIN order_items oi ON o.order_id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-    `;
-
+    let baseQuery = 'FROM orders o LEFT JOIN order_items oi ON o.order_id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id';
     let whereClause = '';
     const conditions = [];
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Category filter
     if (category && category !== 'all') {
       conditions.push(`p.category_id = ${category}`);
     }
 
-    // Period filter
     if (period === 'year') {
       conditions.push(`YEAR(o.created_at) = ${currentYear}`);
       summary.periodLabel = `Tahun ${currentYear}`;
@@ -88,43 +69,82 @@ export default async function AdminDashboardPage({ searchParams }) {
       whereClause = ' WHERE ' + conditions.join(' AND ');
     }
 
-    const query = baseQuery + whereClause + ' GROUP BY o.id ORDER BY o.created_at DESC';
+    const [summaryRows] = await db.query(`
+      SELECT
+        COUNT(DISTINCT o.id) as totalOrders,
+        COALESCE(SUM(o.total_amount), 0) as totalRevenue
+      ${baseQuery}
+      ${whereClause}
+    `);
 
-    const [rows] = await db.query(query);
-    if (rows) {
-      orders = rows;
-      summary.totalOrders = orders.length;
-      summary.totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+    if (summaryRows && summaryRows[0]) {
+      summary.totalOrders = summaryRows[0].totalOrders;
+      summary.totalRevenue = Number(summaryRows[0].totalRevenue);
     }
+
+    const [topProductsRows] = await db.query(`
+      SELECT
+        oi.product_name,
+        SUM(oi.quantity) as total_sold,
+        SUM(oi.quantity * oi.price) as total_revenue
+      ${baseQuery}
+      ${whereClause}
+      GROUP BY oi.product_name
+      ORDER BY total_sold DESC
+      LIMIT 10
+    `);
+
+    if (topProductsRows) {
+      topProducts = topProductsRows.map(row => ({
+        name: row.product_name,
+        count: Number(row.total_sold) || 0,
+        revenue: Number(row.total_revenue) || 0
+      }));
+    }
+
+    const [dailySalesRows] = await db.query(`
+      SELECT
+        DATE(o.created_at) as sale_date,
+        COUNT(DISTINCT o.id) as order_count,
+        SUM(o.total_amount) as daily_revenue
+      ${baseQuery}
+      ${whereClause}
+      GROUP BY DATE(o.created_at)
+      ORDER BY sale_date ASC
+      LIMIT 90
+    `);
+
+    if (dailySalesRows) {
+      dailySales = dailySalesRows.map(row => ({
+        date: row.sale_date,
+        count: row.order_count,
+        revenue: Number(row.daily_revenue)
+      }));
+    }
+
   } catch (error) {
-    console.error('Gagal mengambil data pesanan dari database:', error);
+    console.error('Gagal mengambil data statistik:', error);
   }
 
   return (
-    <>
-      <div className="space-y-6">
+    <div className="bg-[#141414] min-h-screen py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6">
 
         {/* HEADER */}
         <div className="bg-[#2A2A2A] rounded-lg border border-white/10 p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Laporan Penjualan
+                Statistik Penjualan
               </h1>
               <p className="text-sm text-zinc-400 mt-1">
-                Kelola dan pantau transaksi penjualan batik
+                Visualisasi data penjualan dalam bentuk diagram
               </p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-[#D9A441] hover:bg-[#b88933] text-[#141414] text-sm font-bold rounded-lg transition"
-            >
-              Kembali ke Toko
-            </Link>
           </div>
         </div>
 
-        {/* FILTER & EXPORT */}
+        {/* FILTER */}
         <div className="bg-[#2A2A2A] rounded-lg border border-white/10 p-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
 
@@ -140,7 +160,7 @@ export default async function AdminDashboardPage({ searchParams }) {
               />
             </div>
 
-            {/* Filter Periode Dropdown */}
+            {/* Filter Periode */}
             <div className="w-full lg:w-auto">
               <label className="block text-sm font-medium text-zinc-300 mb-2">
                 Filter Periode
@@ -167,6 +187,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                   className="px-3 py-2 bg-[#141414] text-white border border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D9A441]"
                 />
                 <input type="hidden" name="period" value="custom" />
+                {category !== 'all' && <input type="hidden" name="category" value={category} />}
                 <button
                   type="submit"
                   className="px-4 py-2 bg-[#D9A441] hover:bg-[#b88933] text-[#141414] text-sm font-bold rounded-lg transition"
@@ -176,45 +197,20 @@ export default async function AdminDashboardPage({ searchParams }) {
               </form>
             </div>
           </div>
-
-          {/* Export Buttons */}
-          <div className="mt-4 pt-4 border-t border-white/10 flex gap-2">
-            <a
-              href={`/api/export/pdf?period=${period}&start=${startDate}&end=${endDate}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition inline-flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export PDF
-            </a>
-            <a
-              href={`/api/export/excel?period=${period}&start=${startDate}&end=${endDate}`}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition inline-flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export Excel
-            </a>
-          </div>
         </div>
 
         {/* SUMMARY STATS */}
         <div className="bg-[#2A2A2A] rounded-lg border border-white/10 p-6">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">
-              Ringkasan Penjualan
+              Ringkasan
             </h2>
             <p className="text-sm text-zinc-400 mt-1">
               Periode: {summary.periodLabel}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Total Transaksi */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-[#141414] p-5 rounded-lg border border-white/5">
               <div className="flex items-center justify-between">
                 <div>
@@ -233,7 +229,6 @@ export default async function AdminDashboardPage({ searchParams }) {
               </div>
             </div>
 
-            {/* Total Pendapatan */}
             <div className="bg-[#141414] p-5 rounded-lg border border-white/5">
               <div className="flex items-center justify-between">
                 <div>
@@ -251,32 +246,17 @@ export default async function AdminDashboardPage({ searchParams }) {
                 </div>
               </div>
             </div>
-
-            {/* Rata-rata per Transaksi */}
-            <div className="bg-[#141414] p-5 rounded-lg border border-white/5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-400 font-medium mb-1">
-                    Rata-rata per Transaksi
-                  </p>
-                  <p className="text-3xl font-bold text-white">
-                    Rp {summary.totalOrders > 0 ? Math.round(summary.totalRevenue / summary.totalOrders).toLocaleString('id-ID') : '0'}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* TABLE */}
-        <OrderManagementTable orders={orders} summary={summary} />
+        {/* CHARTS */}
+        <StatisticsCharts
+          topProducts={topProducts}
+          dailySales={dailySales}
+          totalOrders={summary.totalOrders}
+        />
 
       </div>
-    </>
+    </div>
   );
 }
